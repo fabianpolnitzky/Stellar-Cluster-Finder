@@ -11,3 +11,8 @@ wheels/
 
 uv.lock
 .python-version
+
+# Files to be igored
+*.png
+*.fits
+*.parquet
