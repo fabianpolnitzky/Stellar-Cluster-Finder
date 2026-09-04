@@ -1,37 +1,33 @@
 import pandas as pd
 
 
-def open_fits(filename):
-    """
-    Opens a FITS file and converts it to a pandas array.
+def load_fits(filename):
+    """Open a FITS table file (such as a Gaia catalogue export) and return it as a DataFrame.
+
+    Gaia FITS files store their catalogue as a table in an extension HDU, not in the primary
+    HDU, so this reads the first table HDU found in the file. Astropy also takes care of the
+    byte order and of masked/missing values during the conversion.
 
     Args:
-        filename (str): The path to the FITS file.
+        filename (str): Path to the FITS file.
 
     Returns:
-        pandas.DataFrame: A DataFrame containing the FITS file data.
+        pandas.DataFrame: The FITS table as a DataFrame.
     """
     if not isinstance(filename, str):
         raise TypeError("filename must be a string")
-    import astropy.io.fits as fits
 
-    with fits.open(filename) as hdul:
-        data = hdul[0].data
+    from astropy.table import Table
 
-    # Ensure the data is in native byte order
-    if hasattr(data, "dtype") and data.dtype.byteorder != "=":
-        data = data.astype(data.dtype.newbyteorder("="))
-
-    return pd.DataFrame(data)
+    return Table.read(filename).to_pandas()
 
 
-def save_dataframe_to_parquet(dataframe, filename):
-    """
-    Saves a pandas dataframe to a parquet file.
+def save_parquet(dataframe, filename):
+    """Save a DataFrame to a Parquet file.
 
     Args:
-        dataframe (pandas.DataFrame): The dataframe to save.
-        filename (str): The path to the parquet file.
+        dataframe (pandas.DataFrame): The DataFrame to save.
+        filename (str): Path to the Parquet file to write.
 
     Returns:
         None
@@ -43,15 +39,14 @@ def save_dataframe_to_parquet(dataframe, filename):
     dataframe.to_parquet(filename)
 
 
-def open_parquet_to_dataframe(filename):
-    """
-    Opens a parquet file and converts it to a pandas dataframe.
+def load_parquet(filename):
+    """Open a Parquet file and return it as a DataFrame.
 
     Args:
-        filename (str): The path to the parquet file.
+        filename (str): Path to the Parquet file.
 
     Returns:
-        pandas.DataFrame: A DataFrame containing the parquet file data.
+        pandas.DataFrame: The Parquet file as a DataFrame.
     """
     if not isinstance(filename, str):
         raise TypeError("filename must be a string")
@@ -59,20 +54,41 @@ def open_parquet_to_dataframe(filename):
 
 
 if __name__ == "__main__":
-    # Create a small FITS file
-    import astropy.io.fits as fits
+    from pathlib import Path
 
-    data = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-    hdu = fits.PrimaryHDU(data)
-    fits.writeto("small.fits", hdu.data, hdu.header, overwrite=True)
+    import numpy as np
+    from astropy.table import Table
 
-    # Open the FITS file and convert it to a pandas DataFrame
-    df = open_fits("small.fits")
-    print(df)
+    # Anchor the output at the project's examples folder, so the test writes to the same place
+    # no matter which directory it is started from.
+    examples = Path(__file__).resolve().parents[2] / "examples"
+    examples.mkdir(exist_ok=True)
+    fits_path = str(examples / "small.fits")
+    parquet_path = str(examples / "small.parquet")
 
-    # Save the pandas DataFrame to a parquet file
-    save_dataframe_to_parquet(df, "small.parquet")
+    # Build a small Gaia-like table; the column names match convert_to_galactic's defaults.
+    rng = np.random.default_rng(42)
+    n = 20
+    table = Table(
+        {
+            "ra": rng.uniform(0, 360, n),
+            "dec": rng.uniform(-90, 90, n),
+            "parallax": rng.uniform(1, 20, n),
+            "pmra": rng.uniform(-10, 10, n),
+            "pmdec": rng.uniform(-10, 10, n),
+            "radial_velocity": rng.uniform(-50, 50, n),
+        }
+    )
+    table.write(fits_path, overwrite=True)
 
-    # Open the parquet file and convert it to a pandas DataFrame
-    df2 = open_parquet_to_dataframe("small.parquet")
-    print(df2)
+    # Round-trip FITS -> DataFrame -> Parquet -> DataFrame and check nothing is lost.
+    from_fits = load_fits(fits_path)
+    assert list(from_fits.columns) == list(table.colnames), "FITS columns changed on load"
+    assert len(from_fits) == n, "FITS row count changed on load"
+
+    save_parquet(from_fits, parquet_path)
+    from_parquet = load_parquet(parquet_path)
+    assert from_parquet.equals(from_fits), "Parquet round-trip changed the data"
+
+    print(f"files.py: round-tripped {n} rows through FITS and Parquet into examples/")
+    print(from_parquet.head())
