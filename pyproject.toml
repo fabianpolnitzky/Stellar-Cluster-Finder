@@ -1,7 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "stellar-cluster-finder"
 version = "0.1.0"
-description = "Add your description here"
+description = "Code for the 2026 PPT at RWTH Aachen University"
 readme = "README.md"
-requires-python = ">=3.14"
-dependencies = []
+requires-python = ">=3.13"
+authors = [
+    { name = "Fabian Polnitzky", email = "fabian.polnitzky@rwth-aachen.de" }
+]
+dependencies = [
+    "astropy>=8.0.1",
+    "ipympl>=0.9.4",
+    "jupyterlab>=4.4",
+    "matplotlib>=3.11.1",
+    "numpy>=2.4",
+    "pandas>=3.0.5",
+    "pyarrow>=25.0.1",
+    "scikit-learn>=1.9.0",
+    "seaborn>=0.13.2",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.3",
+    "ty>=0.0.73",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/fabianpolnitzky/stellar-cluster-finder"
+
+[tool.ruff]
+line-length = 120

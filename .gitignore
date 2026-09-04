@@ -11,3 +11,14 @@ wheels/
 
 uv.lock
 .python-version
+
+# Files to be igored
+*.png
+*.fits
+*.parquet
+*.dat
+.DS_Store
+
+# Agents
+AGENTS.md
+CLAUDE.md
