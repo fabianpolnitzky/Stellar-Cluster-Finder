@@ -16,3 +16,9 @@ uv.lock
 *.png
 *.fits
 *.parquet
+*.dat
+.DS_Store
+
+# Agents
+AGENTS.md
+CLAUDE.md
