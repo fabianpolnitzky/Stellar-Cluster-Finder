@@ -17,7 +17,7 @@ uv.lock
 *.fits
 *.parquet
 *.dat
-.gz
+*.gz
 .DS_Store
 
 # Agents
